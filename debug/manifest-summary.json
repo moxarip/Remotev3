@@ -3,12 +3,12 @@
   "versionName": "1.0.0",
   "versionCode": 1,
   "fileName": "v1.apk",
-  "size": "289K",
-  "sizeBytes": 295840,
-  "sha256": "fc64b4c0ad7c62092c6e7166f58ef9208d5c1662fbff5425907e3fe9cfc6460d",
+  "size": "293K",
+  "sizeBytes": 299936,
+  "sha256": "c2f3108a04c05328bc9c4815a666f733a010689359c394ac28134b8deff92b80",
   "targetSdkVersion": 33,
   "minSdkVersion": 21,
-  "builtAt": "2026-10-10T10:24:06Z",
+  "builtAt": "2026-10-10T10:51:06Z",
   "signatures": ["v1", "v2", "v3"],
   "status": "VERIFIED_VALID"
 }

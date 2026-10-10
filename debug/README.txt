@@ -5,8 +5,8 @@ Package Name:     com.clouvea.remote
 Version Name:     1.0.0
 Version Code:     1
 File:             v1.apk
-Binary Size:      289K (295840 bytes)
-SHA-256 Checksum: fc64b4c0ad7c62092c6e7166f58ef9208d5c1662fbff5425907e3fe9cfc6460d
+Binary Size:      293K (299936 bytes)
+SHA-256 Checksum: c2f3108a04c05328bc9c4815a666f733a010689359c394ac28134b8deff92b80
 Min SDK:          Android 5.0 Lollipop (API 21)
 Target SDK:       Android 13 / 14 (API 33 / 34)
 Signature:        APK Signature Scheme v1, v2, and v3 Verified
