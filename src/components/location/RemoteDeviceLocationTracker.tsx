@@ -17,7 +17,6 @@ import {
   Activity,
   Layers,
   Smartphone,
-  Server,
   Share2
 } from 'lucide-react';
 import L from 'leaflet';
@@ -71,10 +70,12 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
   const connectionLineRef = useRef<L.Polyline | null>(null);
 
   const [copiedCoords, setCopiedCoords] = useState(false);
-  const [mapStyle, setMapStyle] = useState<'dark' | 'street'>('dark');
-  const [tileLayerRef, setTileLayerRef] = useState<L.TileLayer | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
 
-  const nodeLocation = activeNode.location || {
+  const nodeName = activeNode?.name || 'الجهاز المُدار (Node Alpha)';
+  const nodeId = activeNode?.id || 'node-primary';
+
+  const nodeLocation = activeNode?.location || {
     latitude: 24.7178,
     longitude: 46.6792,
     accuracy: 8,
@@ -82,6 +83,7 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
     speed: 0,
     heading: 120,
     timestamp: Date.now(),
+    addressLabel: 'الرياض، طريق الملك فهد',
     source: 'gps' as const
   };
 
@@ -100,116 +102,135 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
     nodeLocation.longitude
   );
 
-  // Initialize and update Leaflet Map
+  // Initialize and update Leaflet Map with complete error recovery and cleanup
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    if (!mapInstanceRef.current) {
-      const map = L.map(mapContainerRef.current, {
-        center: [nodeLocation.latitude, nodeLocation.longitude],
-        zoom: 16,
-        zoomControl: true,
-        attributionControl: false
+    try {
+      if (!mapInstanceRef.current) {
+        // Clear any leftover leaflet container attributes
+        if ((mapContainerRef.current as any)._leaflet_id) {
+          (mapContainerRef.current as any)._leaflet_id = null;
+        }
+
+        const map = L.map(mapContainerRef.current, {
+          center: [nodeLocation.latitude, nodeLocation.longitude],
+          zoom: 16,
+          zoomControl: true,
+          attributionControl: false
+        });
+
+        // Dark style tile layer (CartoDB Dark Matter / Voyager)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19
+        }).addTo(map);
+
+        mapInstanceRef.current = map;
+      }
+
+      const map = mapInstanceRef.current;
+
+      // Custom Target Node Marker (Glowing Radar Icon)
+      const nodeIcon = L.divIcon({
+        className: 'custom-node-pin',
+        html: `
+          <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; inset: 0; background: rgba(29, 153, 243, 0.4); border-radius: 50%; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="position: relative; width: 28px; height: 28px; background: #1d99f3; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 4px 14px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: white;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+          </div>
+        `,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
       });
 
-      // Dark style tile layer (CartoDB Dark Matter)
-      const tileUrl =
-        mapStyle === 'dark'
-          ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      if (targetMarkerRef.current) {
+        targetMarkerRef.current.setLatLng([nodeLocation.latitude, nodeLocation.longitude]);
+      } else {
+        targetMarkerRef.current = L.marker([nodeLocation.latitude, nodeLocation.longitude], {
+          icon: nodeIcon
+        }).addTo(map);
+      }
 
-      const tiles = L.tileLayer(tileUrl, {
-        maxZoom: 19
-      }).addTo(map);
+      // Accuracy Circle
+      if (accuracyCircleRef.current) {
+        accuracyCircleRef.current.setLatLng([nodeLocation.latitude, nodeLocation.longitude]);
+        accuracyCircleRef.current.setRadius(nodeLocation.accuracy || 15);
+      } else {
+        accuracyCircleRef.current = L.circle([nodeLocation.latitude, nodeLocation.longitude], {
+          radius: nodeLocation.accuracy || 15,
+          color: '#3daee9',
+          fillColor: '#1d99f3',
+          fillOpacity: 0.18,
+          weight: 1.5,
+          dashArray: '4, 4'
+        }).addTo(map);
+      }
 
-      setTileLayerRef(tiles);
-      mapInstanceRef.current = map;
-    }
-
-    const map = mapInstanceRef.current;
-
-    // Custom Target Node Marker (Glowing Radar Icon)
-    const nodeIcon = L.divIcon({
-      className: 'custom-node-pin',
-      html: `
-        <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
-          <div style="position: absolute; inset: 0; background: rgba(29, 153, 243, 0.35); border-radius: 50%; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-          <div style="position: relative; width: 28px; height: 28px; background: #1d99f3; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 4px 14px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: white;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+      // Controller Marker
+      const controllerIcon = L.divIcon({
+        className: 'custom-controller-pin',
+        html: `
+          <div style="width: 24px; height: 24px; background: #10b981; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 3px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white;">
+            <div style="width: 6px; height: 6px; background: white; border-radius: 50%;"></div>
           </div>
-        </div>
-      `,
-      iconSize: [44, 44],
-      iconAnchor: [22, 22]
-    });
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
 
-    if (targetMarkerRef.current) {
-      targetMarkerRef.current.setLatLng([nodeLocation.latitude, nodeLocation.longitude]);
-    } else {
-      targetMarkerRef.current = L.marker([nodeLocation.latitude, nodeLocation.longitude], {
-        icon: nodeIcon
-      }).addTo(map);
+      if (controllerMarkerRef.current) {
+        controllerMarkerRef.current.setLatLng([controllerLocation.latitude, controllerLocation.longitude]);
+      } else {
+        controllerMarkerRef.current = L.marker([controllerLocation.latitude, controllerLocation.longitude], {
+          icon: controllerIcon
+        }).addTo(map);
+      }
+
+      // Connection Polyline between Controller and Node
+      const polylineCoords: [number, number][] = [
+        [controllerLocation.latitude, controllerLocation.longitude],
+        [nodeLocation.latitude, nodeLocation.longitude]
+      ];
+
+      if (connectionLineRef.current) {
+        connectionLineRef.current.setLatLngs(polylineCoords);
+      } else {
+        connectionLineRef.current = L.polyline(polylineCoords, {
+          color: '#38bdf8',
+          weight: 2,
+          dashArray: '6, 8',
+          opacity: 0.75
+        }).addTo(map);
+      }
+
+      map.panTo([nodeLocation.latitude, nodeLocation.longitude], { animate: true, duration: 0.6 });
+      setMapError(null);
+    } catch (err: any) {
+      console.warn('Leaflet map initialization notice:', err?.message);
+      setMapError(err?.message || 'خرائط Leaflet قيد التهيئة');
     }
 
-    // Accuracy Circle
-    if (accuracyCircleRef.current) {
-      accuracyCircleRef.current.setLatLng([nodeLocation.latitude, nodeLocation.longitude]);
-      accuracyCircleRef.current.setRadius(nodeLocation.accuracy || 15);
-    } else {
-      accuracyCircleRef.current = L.circle([nodeLocation.latitude, nodeLocation.longitude], {
-        radius: nodeLocation.accuracy || 15,
-        color: '#3daee9',
-        fillColor: '#1d99f3',
-        fillOpacity: 0.18,
-        weight: 1.5,
-        dashArray: '4, 4'
-      }).addTo(map);
-    }
-
-    // Controller Marker
-    const controllerIcon = L.divIcon({
-      className: 'custom-controller-pin',
-      html: `
-        <div style="width: 24px; height: 24px; background: #10b981; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 3px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white;">
-          <div style="width: 6px; height: 6px; background: white; border-radius: 50%;"></div>
-        </div>
-      `,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
-    });
-
-    if (controllerMarkerRef.current) {
-      controllerMarkerRef.current.setLatLng([controllerLocation.latitude, controllerLocation.longitude]);
-    } else {
-      controllerMarkerRef.current = L.marker([controllerLocation.latitude, controllerLocation.longitude], {
-        icon: controllerIcon
-      }).addTo(map);
-    }
-
-    // Connection Polyline between Controller and Node
-    const polylineCoords: [number, number][] = [
-      [controllerLocation.latitude, controllerLocation.longitude],
-      [nodeLocation.latitude, nodeLocation.longitude]
-    ];
-
-    if (connectionLineRef.current) {
-      connectionLineRef.current.setLatLngs(polylineCoords);
-    } else {
-      connectionLineRef.current = L.polyline(polylineCoords, {
-        color: '#38bdf8',
-        weight: 2,
-        dashArray: '6, 8',
-        opacity: 0.75
-      }).addTo(map);
-    }
-
-    // Smoothly pan to target position
-    map.panTo([nodeLocation.latitude, nodeLocation.longitude], { animate: true, duration: 0.8 });
-  }, [nodeLocation, controllerLocation, mapStyle]);
+    return () => {
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove();
+        } catch {}
+        mapInstanceRef.current = null;
+        targetMarkerRef.current = null;
+        accuracyCircleRef.current = null;
+        controllerMarkerRef.current = null;
+        connectionLineRef.current = null;
+      }
+    };
+  }, [nodeLocation.latitude, nodeLocation.longitude, controllerLocation.latitude, controllerLocation.longitude]);
 
   const handleCopyCoords = () => {
     const text = `${nodeLocation.latitude.toFixed(6)}, ${nodeLocation.longitude.toFixed(6)}`;
-    navigator.clipboard.writeText(text);
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+    }
     setCopiedCoords(true);
     showToast(language === 'ar' ? 'تم نسخ الإحداثيات الجغرافية بنجاح' : 'Coordinates copied to clipboard');
     setTimeout(() => setCopiedCoords(false), 2200);
@@ -221,13 +242,13 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
   };
 
   const handleShareLocation = () => {
-    const text = `موقع هاتف ${activeNode.name}: https://www.google.com/maps?q=${nodeLocation.latitude},${nodeLocation.longitude}`;
+    const text = `موقع هاتف ${nodeName}: https://www.google.com/maps?q=${nodeLocation.latitude},${nodeLocation.longitude}`;
     if (navigator.share) {
       navigator.share({
-        title: `موقع ${activeNode.name}`,
+        title: `موقع ${nodeName}`,
         text
       }).catch(() => {});
-    } else {
+    } else if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(text);
       showToast(language === 'ar' ? 'تم نسخ رابط الموقع' : 'Location link copied');
     }
@@ -251,7 +272,7 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-white">
-                {t.locationTracker}
+                {t?.locationTracker || 'تحديد وتتبع موقع الهاتف (GPS Tracker)'}
               </h2>
               <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-full font-mono flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -259,7 +280,7 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              {t.locationTrackerDesc}
+              {t?.locationTrackerDesc || 'تحديد الإحداثيات الجغرافية الحية للهاتف الآخر على الخريطة بالوقت الفعلي مع قياس المسافة ودقة الإشارة'}
             </p>
           </div>
         </div>
@@ -267,13 +288,13 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
         {/* Node selector dropdown */}
         <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-700/90 p-1.5 rounded-xl text-xs">
           <Smartphone className="w-4 h-4 text-sky-400 ml-1" />
-          <span className="text-slate-400 font-medium">الهاتف المُستهدف:</span>
+          <span className="text-slate-400 font-medium">الهاتف المستهدف:</span>
           <select
-            value={activeNode.id}
+            value={nodeId}
             onChange={e => setActiveNodeId(e.target.value)}
             className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
           >
-            {devices.filter(d => d.role === 'node').map(node => (
+            {devices?.filter(d => d.role === 'node').map(node => (
               <option key={node.id} value={node.id} className="bg-slate-900 text-slate-100">
                 {node.name}
               </option>
@@ -291,7 +312,7 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
               <span className="font-bold text-white font-mono">
-                {activeNode.name}
+                {nodeName}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800 font-mono">
                 {accuracyBadgeText}
@@ -300,16 +321,16 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => requestDeviceLocation(activeNode.id)}
+                onClick={() => requestDeviceLocation(nodeId)}
                 className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
                 title="إرسال طلب قراءة إحداثيات فورية للهاتف"
               >
                 <RotateCw className="w-3.5 h-3.5" />
-                <span>{t.requestLocationPing}</span>
+                <span>{t?.requestLocationPing || 'طلب تحديث فوري'}</span>
               </button>
 
               <button
-                onClick={() => toggleLiveTracking(activeNode.id, !isTrackingActive)}
+                onClick={() => toggleLiveTracking(nodeId, !isTrackingActive)}
                 className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${
                   isTrackingActive
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 animate-pulse'
@@ -317,23 +338,42 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
                 }`}
               >
                 <Radio className="w-3.5 h-3.5" />
-                <span>{isTrackingActive ? t.stopLiveTracking : t.startLiveTracking}</span>
+                <span>{isTrackingActive ? (t?.stopLiveTracking || 'إيقاف التتبع') : (t?.startLiveTracking || 'تفعيل الرادار المباشر')}</span>
               </button>
 
               <button
                 onClick={handleOpenGoogleMaps}
                 className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors border border-slate-700"
-                title={t.openInGoogleMaps}
+                title={t?.openInGoogleMaps || 'فتح في خرائط Google'}
               >
                 <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden sm:inline">{t.openInGoogleMaps}</span>
+                <span className="hidden sm:inline">{t?.openInGoogleMaps || 'خرائط Google'}</span>
               </button>
             </div>
           </div>
 
-          {/* Map Canvas */}
-          <div className="relative w-full h-[460px] bg-slate-950">
+          {/* Map Canvas / Radar Viewport */}
+          <div className="relative w-full h-[460px] bg-slate-950 overflow-hidden">
             <div ref={mapContainerRef} className="w-full h-full z-10" />
+
+            {/* Fallback Radar Grid Overlay if tile error or loading */}
+            {mapError && (
+              <div className="absolute inset-0 z-15 bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-48 h-48 rounded-full border-2 border-sky-500/40 relative flex items-center justify-center animate-pulse">
+                  <div className="w-32 h-32 rounded-full border border-sky-400/30 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-sky-500/20 border border-sky-300/40 flex items-center justify-center">
+                      <MapPin className="w-6 h-6 text-sky-400 animate-bounce" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 font-mono text-xs text-sky-300">
+                  {nodeLocation.latitude.toFixed(6)}, {nodeLocation.longitude.toFixed(6)}
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  رادار GPS نشط • دقة الإشارة: ±{nodeLocation.accuracy} متر
+                </p>
+              </div>
+            )}
 
             {/* Radar Pulsing Overlay when Continuous Live Tracking is Active */}
             {isTrackingActive && (
@@ -370,7 +410,7 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
                 <button
                   onClick={handleCopyCoords}
                   className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1 transition-colors"
-                  title={t.copyCoordinates}
+                  title={t?.copyCoordinates || 'نسخ الإحداثيات'}
                 >
                   {copiedCoords ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedCoords ? (language === 'ar' ? 'تم النسخ' : 'Copied') : (language === 'ar' ? 'نسخ' : 'Copy')}</span>
@@ -389,25 +429,25 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
             {/* Hardware Metrics Grid */}
             <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
               <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <span className="text-[10px] text-slate-400 block mb-0.5">{t.gpsAccuracy}</span>
+                <span className="text-[10px] text-slate-400 block mb-0.5">{t?.gpsAccuracy || 'دقة إشارة GPS'}</span>
                 <span className="font-bold text-emerald-400">± {nodeLocation.accuracy} m</span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <span className="text-[10px] text-slate-400 block mb-0.5">{t.speedKmh}</span>
+                <span className="text-[10px] text-slate-400 block mb-0.5">{t?.speedKmh || 'سرعة الحركة'}</span>
                 <span className="font-bold text-white">{nodeLocation.speed || 0} km/h</span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <span className="text-[10px] text-slate-400 block mb-0.5">{t.altitudeMeters}</span>
+                <span className="text-[10px] text-slate-400 block mb-0.5">{t?.altitudeMeters || 'الارتفاع'}</span>
                 <span className="font-bold text-white">{nodeLocation.altitude ? `${nodeLocation.altitude} m` : '615 m'}</span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
                 <span className="text-[10px] text-slate-400 block mb-0.5">البطارية</span>
                 <span className="font-bold text-sky-400 flex items-center gap-1">
-                  {activeNode.isCharging ? <BatteryCharging className="w-3.5 h-3.5 text-emerald-400" /> : <Battery className="w-3.5 h-3.5" />}
-                  {activeNode.batteryLevel}%
+                  {activeNode?.isCharging ? <BatteryCharging className="w-3.5 h-3.5 text-emerald-400" /> : <Battery className="w-3.5 h-3.5" />}
+                  {activeNode?.batteryLevel || 85}%
                 </span>
               </div>
             </div>
@@ -415,7 +455,7 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
             {/* Remote Finding Actions */}
             <div className="space-y-2 pt-2 border-t border-slate-800">
               <button
-                onClick={() => isRingingDeviceId ? stopRinging() : ringDevice(activeNode.id)}
+                onClick={() => isRingingDeviceId ? stopRinging() : ringDevice(nodeId)}
                 className={`w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all ${
                   isRingingDeviceId
                     ? 'bg-rose-600 hover:bg-rose-500 text-white animate-bounce'
@@ -423,7 +463,7 @@ export const RemoteDeviceLocationTracker: React.FC = () => {
                 }`}
               >
                 <BellRing className="w-4 h-4" />
-                <span>{isRingingDeviceId ? 'إيقاف رنين الطوارئ' : t.ringDeviceToLocate}</span>
+                <span>{isRingingDeviceId ? 'إيقاف رنين الطوارئ' : (t?.ringDeviceToLocate || 'تشغيل رنين واهتزاز الطوارئ للعثور عليه')}</span>
               </button>
 
               <button

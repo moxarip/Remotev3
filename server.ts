@@ -883,6 +883,23 @@ async function startServer() {
       server: { middlewareMode: true }
     });
     app.use(vite.middlewares);
+
+    app.use('*', async (req, res, next) => {
+      if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/ws') || req.originalUrl.startsWith('/debug')) {
+        return next();
+      }
+      try {
+        const url = req.originalUrl;
+        let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e: any) {
+        if (vite.ssrFixStacktrace) {
+          vite.ssrFixStacktrace(e);
+        }
+        next(e);
+      }
+    });
   } else {
     app.use(express.static(path.resolve(__dirname, 'dist')));
     app.get('*', (req, res) => {

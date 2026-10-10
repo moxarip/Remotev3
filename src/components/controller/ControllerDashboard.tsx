@@ -36,8 +36,10 @@ export const ControllerDashboard: React.FC = () => {
     language
   } = useClouvea();
 
-  const nodes = devices.filter(d => d.role === 'node');
-  const usedPercent = Math.round((activeNode.storageUsedBytes / activeNode.storageTotalBytes) * 100);
+  const nodes = devices ? devices.filter(d => d.role === 'node') : [];
+  const totalStorage = activeNode?.storageTotalBytes || 256000000000;
+  const usedStorage = activeNode?.storageUsedBytes || 0;
+  const usedPercent = totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
 
   const handleQuickStatusQuery = () => {
     dispatchTask('GET_DEVICE_STATUS', { query: 'full_telemetry' });

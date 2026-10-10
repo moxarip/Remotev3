@@ -48,7 +48,21 @@ export const RemoteFileBrowser: React.FC = () => {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<RemoteFile | null>(null);
 
-  const currentFolder = folderScopes.find(s => s.id === selectedFolderId) || folderScopes[0];
+  const defaultFolderScope = {
+    id: 'scope-default',
+    name: 'المجلد المشترك',
+    path: '/storage/emulated/0/Download',
+    safTreeUri: 'content://com.android.externalstorage.documents/tree/primary%3ADownload',
+    isShared: true,
+    accessMode: 'readwrite' as const,
+    fileCount: 0,
+    totalBytes: 0,
+    iconType: 'downloads' as const
+  };
+
+  const currentFolder = (folderScopes && folderScopes.length > 0)
+    ? (folderScopes.find(s => s.id === selectedFolderId) || folderScopes[0])
+    : defaultFolderScope;
 
   // Filtering and sorting
   const filesInScope = useMemo(() => {

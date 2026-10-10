@@ -174,9 +174,17 @@ export const ClouveaProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const wsRef = useRef<WebSocket | null>(null);
   const pingResolverRef = useRef<((latency: number) => void) | null>(null);
 
-  // Selected or active devices
-  const controllerDevice = devices.find(d => d.role === 'controller') || devices[0];
-  const activeNode = devices.find(d => d.id === activeNodeId) || devices.find(d => d.role === 'node') || devices[1] || devices[0];
+  // Safe Selected or active devices
+  const fallbackController: ClouveaDevice = initialClouveaDevices[0];
+  const fallbackNode: ClouveaDevice = initialClouveaDevices[1] || initialClouveaDevices[0];
+
+  const controllerDevice = (devices && devices.length > 0)
+    ? (devices.find(d => d.role === 'controller') || devices[0])
+    : fallbackController;
+
+  const activeNode = (devices && devices.length > 0)
+    ? (devices.find(d => d.id === activeNodeId) || devices.find(d => d.role === 'node') || devices[1] || devices[0])
+    : fallbackNode;
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
