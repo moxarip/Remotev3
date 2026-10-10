@@ -186,6 +186,20 @@ export interface ClouveaDevice {
   latencyMs: number;
   isTrusted: boolean;
   activeTasksCount: number;
+  location?: DeviceLocation;
+  isLocationTrackingEnabled?: boolean;
+}
+
+export interface DeviceLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number; // in meters
+  altitude?: number | null;
+  speed?: number | null; // in km/h or m/s
+  heading?: number | null;
+  timestamp: number;
+  addressLabel?: string;
+  source: 'gps' | 'network' | 'fused';
 }
 
 export interface ClouveaFolderScope {
@@ -222,6 +236,9 @@ export type ClouveaTaskType =
   | 'UPLOAD_FILE'
   | 'START_BACKUP'
   | 'GET_DEVICE_STATUS'
+  | 'GET_DEVICE_LOCATION'
+  | 'START_LIVE_TRACKING'
+  | 'STOP_LIVE_TRACKING'
   | 'SYNC_FOLDER'
   | 'CANCEL_TASK';
 

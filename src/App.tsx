@@ -10,6 +10,7 @@ import { TaskManagerConsole } from './components/tasks/TaskManagerConsole';
 import { DeviceTrustModal } from './components/security/DeviceTrustModal';
 import { ArchitectureDocModal } from './components/analysis/ArchitectureDocModal';
 import { IncomingPairApprovalModal } from './components/security/IncomingPairApprovalModal';
+import { RemoteDeviceLocationTracker } from './components/location/RemoteDeviceLocationTracker';
 import {
   CheckCircle2,
   ShieldCheck,
@@ -89,6 +90,7 @@ const ClouveaMainContent: React.FC = () => {
         )}
 
         {activeView === 'node' && <NodeManagementPanel />}
+        {activeView === 'location' && <RemoteDeviceLocationTracker />}
         {activeView === 'dual_mesh' && <DualMeshView />}
         {activeView === 'backup' && <RemoteBackupCenter />}
         {activeView === 'tasks' && <TaskManagerConsole />}

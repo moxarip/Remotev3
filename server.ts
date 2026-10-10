@@ -82,6 +82,8 @@ interface StoredDevice {
   latencyMs: number;
   isTrusted: boolean;
   activeTasksCount: number;
+  location?: any;
+  isLocationTrackingEnabled?: boolean;
 }
 
 interface PairingSession {
@@ -113,7 +115,18 @@ let devices: StoredDevice[] = [
     lastSeen: 'الآن (متصل مباشرة)',
     latencyMs: 11,
     isTrusted: true,
-    activeTasksCount: 0
+    activeTasksCount: 0,
+    location: {
+      latitude: 24.7136,
+      longitude: 46.6753,
+      accuracy: 5,
+      altitude: 612,
+      speed: 0,
+      heading: 0,
+      timestamp: Date.now(),
+      addressLabel: 'الرياض، حي العليا',
+      source: 'gps'
+    }
   },
   {
     id: 'node-primary',
@@ -133,8 +146,19 @@ let devices: StoredDevice[] = [
     lastSeen: 'الآن (متصل)',
     latencyMs: 15,
     isTrusted: true,
-    activeTasksCount: 0
-  }
+    activeTasksCount: 0,
+    location: {
+      latitude: 24.7178,
+      longitude: 46.6792,
+      accuracy: 8,
+      altitude: 615,
+      speed: 0,
+      heading: 120,
+      timestamp: Date.now(),
+      addressLabel: 'طريق الملك فهد، الرياض',
+      source: 'gps'
+    }
+  },
 ];
 
 let folderScopes: StoredFolderScope[] = [
@@ -474,6 +498,35 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'DEVICE_LOCATION_UPDATE': {
+          const { deviceId, location } = payload;
+          const dev = devices.find(d => d.id === deviceId);
+          if (dev) {
+            dev.location = location;
+            dev.lastSeen = 'الآن (تحديث GPS)';
+          }
+          broadcast({
+            type: 'DEVICE_LOCATION_UPDATED',
+            payload: { deviceId, location }
+          });
+          break;
+        }
+
+        case 'REQUEST_DEVICE_LOCATION': {
+          const { targetDeviceId } = payload;
+          sendToDevice(targetDeviceId, { type: 'QUERY_LOCATION_NOW', payload: {} });
+          break;
+        }
+
+        case 'TOGGLE_LIVE_TRACKING': {
+          const { targetDeviceId, enabled } = payload;
+          const dev = devices.find(d => d.id === targetDeviceId);
+          if (dev) dev.isLocationTrackingEnabled = enabled;
+          sendToDevice(targetDeviceId, { type: 'SET_LIVE_TRACKING', payload: { enabled } });
+          broadcast({ type: 'TRACKING_STATE_UPDATED', payload: { deviceId: targetDeviceId, enabled } });
+          break;
+        }
+
         case 'SYNC_NODE_FILES': {
           const { nodeId, newFiles } = payload;
           if (Array.isArray(newFiles)) {
@@ -581,6 +634,26 @@ app.post('/api/pairing/verify', (req, res) => {
   broadcast({ type: 'DEVICES_UPDATED', payload: devices });
   pairingCodes.delete(code);
   res.json({ success: true, node: session });
+});
+
+// Location API
+app.get('/api/nodes/:nodeId/location', (req, res) => {
+  const dev = devices.find(d => d.id === req.params.nodeId);
+  if (dev && dev.location) {
+    return res.json(dev.location);
+  }
+  res.status(404).json({ error: 'الموقع غير متوفر حالياً لهذا الجهاز' });
+});
+
+app.post('/api/nodes/:nodeId/location', (req, res) => {
+  const dev = devices.find(d => d.id === req.params.nodeId);
+  if (dev) {
+    dev.location = req.body.location || req.body;
+    dev.lastSeen = 'الآن (تحديث GPS)';
+    broadcast({ type: 'DEVICE_LOCATION_UPDATED', payload: { deviceId: dev.id, location: dev.location } });
+    return res.json({ success: true, location: dev.location });
+  }
+  res.status(404).json({ error: 'الجهاز غير مسجل' });
 });
 
 // Folder Scopes (SAF)

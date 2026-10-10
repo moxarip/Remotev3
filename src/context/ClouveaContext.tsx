@@ -9,7 +9,8 @@ import {
   AuditEvent,
   ClouveaRole,
   ClouveaConnectionMode,
-  PairingRequest
+  PairingRequest,
+  DeviceLocation
 } from '../types';
 import {
   initialClouveaDevices,
@@ -40,6 +41,7 @@ export type ClouveaActiveView =
   | 'controller'
   | 'node'
   | 'dual_mesh'
+  | 'location'
   | 'backup'
   | 'tasks'
   | 'security'
@@ -106,6 +108,11 @@ interface ClouveaContextType {
   restoreBackup: (jobId: string, destination: string) => Promise<void>;
   downloadBackupArchive: (jobId: string) => Promise<void>;
 
+  // Remote Location & GPS Tracking
+  requestDeviceLocation: (targetDeviceId?: string) => Promise<void>;
+  toggleLiveTracking: (targetDeviceId: string, enabled: boolean) => void;
+  isTrackingActive: boolean;
+
   // Audit Trail & Sound
   auditEvents: AuditEvent[];
   soundEnabled: boolean;
@@ -161,6 +168,7 @@ export const ClouveaProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [backupJobs, setBackupJobs] = useState<BackupJob[]>(initialBackupJobs);
   const [activeBackupJob, setActiveBackupJob] = useState<BackupJob | null>(null);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>(initialAuditEvents);
+  const [isTrackingActive, setIsTrackingActive] = useState<boolean>(false);
 
   const t = translations[language];
   const wsRef = useRef<WebSocket | null>(null);
@@ -269,6 +277,12 @@ export const ClouveaProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 pingResolverRef.current(latency);
                 pingResolverRef.current = null;
               }
+            } else if (type === 'DEVICE_LOCATION_UPDATED') {
+              setDevices(prev => prev.map(d => d.id === payload.deviceId ? { ...d, location: payload.location, lastSeen: 'الآن (GPS نشط)' } : d));
+            } else if (type === 'QUERY_LOCATION_NOW') {
+              readAndBroadcastLocation();
+            } else if (type === 'SET_LIVE_TRACKING') {
+              setIsTrackingActive(payload.enabled);
             }
           } catch {
             // Ignored
@@ -394,6 +408,112 @@ export const ClouveaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     soundEffects.stopRing();
   };
+
+  // Real Geolocation Broadcast from Node
+  const readAndBroadcastLocation = useCallback(() => {
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc: DeviceLocation = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: Math.round(pos.coords.accuracy),
+            altitude: pos.coords.altitude ? Math.round(pos.coords.altitude) : null,
+            speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0,
+            heading: pos.coords.heading || null,
+            timestamp: pos.timestamp,
+            addressLabel: 'إحداثيات حية مباشرة (GPS)',
+            source: 'gps'
+          };
+
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+              type: 'DEVICE_LOCATION_UPDATE',
+              payload: {
+                deviceId: thisDeviceIdentity.deviceId,
+                location: loc
+              }
+            }));
+          }
+        },
+        (err) => console.log('Location error:', err.message),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+  }, [thisDeviceIdentity.deviceId]);
+
+  // Request fresh location fix from remote node
+  const requestDeviceLocation = useCallback(async (targetDeviceId = activeNodeId) => {
+    showToast(language === 'ar' ? 'جاري طلب تحديث موقع GPS من الهاتف الآخر...' : 'Requesting live GPS fix from phone...');
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'REQUEST_DEVICE_LOCATION',
+        payload: { targetDeviceId }
+      }));
+    }
+    try {
+      const res = await fetch(`/api/nodes/${targetDeviceId}/location`);
+      if (res.ok) {
+        const loc = await res.json();
+        setDevices(prev => prev.map(d => d.id === targetDeviceId ? { ...d, location: loc } : d));
+      }
+    } catch {}
+  }, [activeNodeId, language, showToast]);
+
+  // Toggle Continuous Live Radar Tracking
+  const toggleLiveTracking = useCallback((targetDeviceId = activeNodeId, enabled: boolean) => {
+    setIsTrackingActive(enabled);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'TOGGLE_LIVE_TRACKING',
+        payload: { targetDeviceId, enabled }
+      }));
+    }
+    showToast(
+      enabled
+        ? (language === 'ar' ? 'تم تفعيل رادار التتبع المباشر المستمر' : 'Continuous live tracking active')
+        : (language === 'ar' ? 'تم إيقاف التتبع المستمر' : 'Continuous tracking stopped')
+    );
+  }, [activeNodeId, language, showToast]);
+
+  // Watch position automatically on the managed Node device
+  useEffect(() => {
+    let watchId: number | null = null;
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const loc: DeviceLocation = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: Math.round(pos.coords.accuracy),
+            altitude: pos.coords.altitude ? Math.round(pos.coords.altitude) : null,
+            speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0,
+            heading: pos.coords.heading || null,
+            timestamp: pos.timestamp,
+            addressLabel: 'إحداثيات حية مباشرة (GPS)',
+            source: 'gps'
+          };
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+              type: 'DEVICE_LOCATION_UPDATE',
+              payload: {
+                deviceId: thisDeviceIdentity.deviceId,
+                location: loc
+              }
+            }));
+          }
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      );
+    }
+
+    return () => {
+      if (watchId !== null && typeof navigator !== 'undefined' && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [thisDeviceIdentity.deviceId]);
 
   // Real Pairing Code generation
   const generatePairingCode = async (): Promise<string> => {
@@ -904,6 +1024,10 @@ export const ClouveaProvider: React.FC<{ children: React.ReactNode }> = ({ child
         startSmartBackup,
         restoreBackup,
         downloadBackupArchive,
+
+        requestDeviceLocation,
+        toggleLiveTracking,
+        isTrackingActive,
 
         auditEvents,
         soundEnabled,

@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Activity
+  Activity,
+  MapPin,
+  Navigation
 } from 'lucide-react';
 import { formatBytes } from '../../utils/crypto';
 
@@ -284,6 +286,17 @@ export const ControllerDashboard: React.FC = () => {
                 <span>متابعة طابور المهام وسجل العمليات</span>
               </div>
               <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-transform" />
+            </button>
+
+            <button
+              onClick={() => setActiveView('location')}
+              className="w-full p-3 rounded-xl bg-sky-950/40 hover:bg-sky-900/60 border border-sky-800/60 flex items-center justify-between text-xs font-semibold text-sky-200 transition-all group"
+            >
+              <div className="flex items-center gap-2.5">
+                <MapPin className="w-4 h-4 text-sky-400" />
+                <span>تحديد وتتبع موقع الهاتف على الخريطة (GPS Radar)</span>
+              </div>
+              <ArrowRight className="w-4 h-4 text-sky-400 group-hover:text-white transition-transform" />
             </button>
 
             <button

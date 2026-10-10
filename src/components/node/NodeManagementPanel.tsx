@@ -26,7 +26,8 @@ import {
   Copy,
   Check,
   Smartphone,
-  HardDrive
+  HardDrive,
+  MapPin
 } from 'lucide-react';
 import { formatBytes } from '../../utils/crypto';
 
@@ -125,10 +126,17 @@ export const NodeManagementPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Foreground Service Daemon Status */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 text-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-slate-300 font-medium">{language === 'ar' ? 'خدمة Foreground نشطة ومتاحة للتحكم' : 'Foreground Daemon Active'}</span>
+        {/* Foreground Service Daemon Status & GPS Badge */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 text-xs font-mono">
+            <MapPin className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+            <span className="text-slate-300">GPS: {activeNode.location ? `${activeNode.location.latitude.toFixed(4)}, ${activeNode.location.longitude.toFixed(4)}` : 'بث مباشر نشط'}</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 text-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-slate-300 font-medium">{language === 'ar' ? 'خدمة Foreground نشطة' : 'Foreground Active'}</span>
+          </div>
         </div>
       </div>
 

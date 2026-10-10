@@ -26,7 +26,18 @@ export const initialClouveaDevices: ClouveaDevice[] = [
     lastSeen: 'الآن (متصل مباشرة)',
     latencyMs: 14,
     isTrusted: true,
-    activeTasksCount: 1
+    activeTasksCount: 1,
+    location: {
+      latitude: 24.7136,
+      longitude: 46.6753,
+      accuracy: 6,
+      altitude: 612,
+      speed: 0,
+      heading: 45,
+      timestamp: Date.now(),
+      addressLabel: 'Riyadh, Al Olaya District',
+      source: 'gps'
+    }
   },
   {
     id: 'node-alpha-1',
@@ -46,7 +57,18 @@ export const initialClouveaDevices: ClouveaDevice[] = [
     lastSeen: 'الآن (متصل)',
     latencyMs: 22,
     isTrusted: true,
-    activeTasksCount: 0
+    activeTasksCount: 0,
+    location: {
+      latitude: 24.7178,
+      longitude: 46.6792,
+      accuracy: 8,
+      altitude: 615,
+      speed: 0,
+      heading: 120,
+      timestamp: Date.now(),
+      addressLabel: 'King Fahd Road, Riyadh',
+      source: 'gps'
+    }
   },
   {
     id: 'node-beta-2',

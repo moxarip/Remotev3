@@ -142,6 +142,26 @@ export const translations = {
     approvePair: 'موافقة واعتماد كجهاز موثوق',
     rejectPair: 'رفض الاقتران',
     
+    // Location & GPS Tracking
+    locationTracker: 'تحديد وتتبع موقع الهاتف (GPS Tracker)',
+    locationTrackerDesc: 'تحديد الإحداثيات الجغرافية الحية للهاتف الآخر على الخريطة بالوقت الفعلي مع قياس المسافة ودقة الإشارة',
+    requestLocationPing: 'طلب تحديث الموقع الفوري',
+    startLiveTracking: 'تفعيل التتبع المباشر (رادار مستمر)',
+    stopLiveTracking: 'إيقاف التتبع المستمر',
+    openInGoogleMaps: 'فتح في خرائط Google',
+    copyCoordinates: 'نسخ الإحداثيات',
+    coordinatesCopied: 'تم نسخ الإحداثيات بنجاح',
+    gpsAccuracy: 'دقة إشارة GPS',
+    speedKmh: 'سرعة الحركة',
+    altitudeMeters: 'الارتفاع',
+    distanceFromController: 'المسافة عن هاتفك',
+    lastLocationUpdate: 'آخر إحداثيات مستلمة',
+    ringDeviceToLocate: 'تشغيل رنين واهتزاز الطوارئ للعثور عليه',
+    gpsSignalExcellent: 'دقة ممتازة (أقل من 10 أمتار)',
+    gpsSignalGood: 'دقة جيدة',
+    gpsSignalApproximate: 'دقة تقريبية',
+    locationPermissionNote: 'يتم استخدام إحداثيات GPS الحقيقية المصرح بها عبر نظام Android / المتصفح',
+
     // Common
     language: 'اللغة',
     sound: 'المؤثرات الصوتية',
@@ -291,6 +311,26 @@ export const translations = {
     approvePair: 'Approve & Trust Device',
     rejectPair: 'Reject Request',
     
+    // Location & GPS Tracking
+    locationTracker: 'Remote Phone GPS Tracker',
+    locationTrackerDesc: 'Live geographic coordinates of the target device on an interactive map with distance and accuracy rating',
+    requestLocationPing: 'Request Immediate GPS Ping',
+    startLiveTracking: 'Start Live Radar Tracking',
+    stopLiveTracking: 'Stop Live Tracking',
+    openInGoogleMaps: 'Open in Google Maps',
+    copyCoordinates: 'Copy Coordinates',
+    coordinatesCopied: 'Coordinates copied to clipboard',
+    gpsAccuracy: 'GPS Accuracy',
+    speedKmh: 'Current Speed',
+    altitudeMeters: 'Altitude',
+    distanceFromController: 'Distance from this phone',
+    lastLocationUpdate: 'Last Location Fix',
+    ringDeviceToLocate: 'Ring & Vibrate Device to Locate',
+    gpsSignalExcellent: 'Excellent Accuracy (< 10 meters)',
+    gpsSignalGood: 'Good Accuracy',
+    gpsSignalApproximate: 'Approximate Accuracy',
+    locationPermissionNote: 'Uses real GPS hardware coordinates authorized via Android / Web standards',
+
     // Common
     language: 'Language',
     sound: 'Sound Effects',

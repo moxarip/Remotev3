@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Clouvea Remote</string>
+    <string name="app_description">Android Personal Remote Management &amp; Differential Backup</string>
+</resources>

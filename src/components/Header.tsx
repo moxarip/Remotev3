@@ -22,7 +22,8 @@ import {
   KeyRound,
   Radio,
   Activity,
-  Download
+  Download,
+  MapPin
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -58,6 +59,7 @@ export const Header: React.FC = () => {
   const navItems: { id: ClouveaActiveView; label: string; icon: React.ReactNode }[] = [
     { id: 'controller', label: language === 'ar' ? 'هاتف التحكم' : 'Controller', icon: <Smartphone className="w-3.5 h-3.5" /> },
     { id: 'node', label: language === 'ar' ? 'الجهاز المُدار' : 'Node', icon: <Server className="w-3.5 h-3.5" /> },
+    { id: 'location', label: language === 'ar' ? 'تحديد الموقع' : 'Location GPS', icon: <MapPin className="w-3.5 h-3.5 text-sky-400" /> },
     { id: 'dual_mesh', label: language === 'ar' ? 'الربط المباشر بين الهاتفين' : 'Dual Live Link', icon: <ArrowLeftRight className="w-3.5 h-3.5" /> },
     { id: 'backup', label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', icon: <HardDrive className="w-3.5 h-3.5" /> },
     { id: 'tasks', label: language === 'ar' ? 'مركز المهام' : 'Tasks', icon: <FolderTree className="w-3.5 h-3.5" /> },
