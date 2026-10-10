@@ -174,6 +174,14 @@ class SoundManager {
     if (this.isRinging) return;
     this.isRinging = true;
 
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([500, 250, 500, 250, 500, 250, 800]);
+      }
+    } catch {
+      // Ignored
+    }
+
     if (this.isMuted) return;
 
     try {
@@ -210,6 +218,13 @@ class SoundManager {
 
   public stopRing() {
     this.isRinging = false;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(0);
+      }
+    } catch {
+      // Ignored
+    }
     try {
       if (this.ringOscillator) {
         this.ringOscillator.stop();

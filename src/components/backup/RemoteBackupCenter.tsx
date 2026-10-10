@@ -25,6 +25,7 @@ export const RemoteBackupCenter: React.FC = () => {
     folderScopes,
     startSmartBackup,
     restoreBackup,
+    downloadBackupArchive,
     activeBackupJob,
     backupJobs,
     t,
@@ -281,13 +282,23 @@ export const RemoteBackupCenter: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-3 px-3">
-                    <button
-                      onClick={() => setRestoreModalJobId(job.id)}
-                      className="px-2.5 py-1 rounded-lg bg-sky-950 hover:bg-sky-900 text-sky-400 border border-sky-800 text-xs font-semibold flex items-center gap-1"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>{t.restoreBackup}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => downloadBackupArchive(job.id)}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 text-xs font-semibold flex items-center gap-1"
+                        title="تنزيل أرشيف النسخ كملف مضغوط ZIP"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>{language === 'ar' ? 'تنزيل ZIP' : 'ZIP'}</span>
+                      </button>
+                      <button
+                        onClick={() => setRestoreModalJobId(job.id)}
+                        className="px-2.5 py-1 rounded-lg bg-sky-950 hover:bg-sky-900 text-sky-400 border border-sky-800 text-xs font-semibold flex items-center gap-1"
+                      >
+                        <FolderSync className="w-3 h-3" />
+                        <span>{t.restoreBackup}</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

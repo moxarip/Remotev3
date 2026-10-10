@@ -9,6 +9,7 @@ import { RemoteBackupCenter } from './components/backup/RemoteBackupCenter';
 import { TaskManagerConsole } from './components/tasks/TaskManagerConsole';
 import { DeviceTrustModal } from './components/security/DeviceTrustModal';
 import { ArchitectureDocModal } from './components/analysis/ArchitectureDocModal';
+import { IncomingPairApprovalModal } from './components/security/IncomingPairApprovalModal';
 import {
   CheckCircle2,
   ShieldCheck,
@@ -41,6 +42,9 @@ const ClouveaMainContent: React.FC = () => {
         </div>
       )}
 
+      {/* Incoming Pairing Approval Dialog */}
+      <IncomingPairApprovalModal />
+
       {/* Emergency Ringing Alarm Overlay */}
       {isRingingDeviceId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-rose-950/85 backdrop-blur-md animate-in fade-in duration-200">
@@ -54,10 +58,10 @@ const ClouveaMainContent: React.FC = () => {
 
             <div className="space-y-1">
               <h2 className="text-xl font-extrabold text-white tracking-wide">
-                إنذار رنين الطوارئ نشط!
+                إنذار رنين واهتزاز الطوارئ نشط!
               </h2>
               <p className="text-xs text-rose-300 font-medium">
-                جهاز {ringingDevice?.name || 'Clouvea Node'} يرن بأعلى صوت للبحث عنه
+                جهاز {ringingDevice?.name || 'Clouvea Node'} يرن بأعلى صوت مع الاهتزاز للعثور عليه
               </p>
             </div>
 
@@ -103,7 +107,7 @@ const ClouveaMainContent: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
-            <span>Storage Access Framework • WorkManager • Room Engine</span>
+            <span>Storage Access Framework • WorkManager • Room Engine • P2P Signal</span>
           </div>
         </div>
       </footer>

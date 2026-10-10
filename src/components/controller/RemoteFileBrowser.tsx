@@ -35,6 +35,7 @@ export const RemoteFileBrowser: React.FC = () => {
     downloadRemoteFile,
     uploadFileToNode,
     dispatchTask,
+    downloadFilesAsZip,
     t,
     language,
     showToast
@@ -97,11 +98,8 @@ export const RemoteFileBrowser: React.FC = () => {
 
   const handleBatchDownload = () => {
     const selectedFiles = filteredAndSortedFiles.filter(f => selectedFileIds.includes(f.id));
-    selectedFiles.forEach((file, index) => {
-      setTimeout(() => {
-        downloadRemoteFile(file);
-      }, index * 400);
-    });
+    if (selectedFiles.length === 0) return;
+    downloadFilesAsZip(selectedFiles);
     setSelectedFileIds([]);
   };
 

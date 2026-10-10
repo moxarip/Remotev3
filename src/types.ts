@@ -282,3 +282,14 @@ export interface AuditEvent {
   status: 'success' | 'warning' | 'error';
   details: string;
 }
+
+export interface PairingRequest {
+  code: string;
+  controller: {
+    id: string;
+    name: string;
+    model: string;
+    ip?: string;
+  };
+}
+

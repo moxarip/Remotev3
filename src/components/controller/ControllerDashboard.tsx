@@ -65,7 +65,7 @@ export const ControllerDashboard: React.FC = () => {
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1d99f3] to-[#3daee9] hover:from-[#3daee9] hover:to-[#5bc0ff] text-white text-xs font-bold shadow-md shadow-sky-500/20 active:scale-95 transition-all flex items-center gap-1.5"
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>المحاكاة المزدوجة المباشرة</span>
+            <span>{language === 'ar' ? 'عرض الربط المباشر بين الهاتفين' : 'Dual Phone Live Link'}</span>
           </button>
         </div>
       </div>
